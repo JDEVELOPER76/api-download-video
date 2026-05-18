@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Video Downloader | Descarga Videos con yt-dlp</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', 'Inter', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background:
+                radial-gradient(circle at top left, rgba(59, 201, 219, 0.25), transparent 35%),
+                radial-gradient(circle at bottom right, rgba(34, 102, 204, 0.28), transparent 40%),
+                linear-gradient(145deg, #0a0f1e 0%, #0c1222 100%);
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Todo suelto: sin tarjeta contenedora, cada bloque respira */
+        .content {
+            max-width: 780px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        /* Logo principal */
+        .logo-area {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .brand-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            background: rgba(10, 20, 35, 0.55);
+            backdrop-filter: blur(8px);
+            padding: 0.7rem 2rem;
+            border-radius: 100px;
+            border: 1px solid rgba(0, 255, 255, 0.35);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+        }
+        .brand-icon svg {
+            width: 44px;
+            height: 44px;
+            filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+        }
+        .brand-text {
+            font-size: 1.9rem;
+            font-weight: 800;
+            background: linear-gradient(125deg, #FFE6B0, #FFB347, #3bc9db);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+        }
+        .brand-sub {
+            font-size: 0.85rem;
+            color: #b9d0ff;
+            margin-top: 12px;
+            font-weight: 500;
+            background: rgba(0, 0, 0, 0.3);
+            display: inline-block;
+            padding: 0.3rem 1.2rem;
+            border-radius: 30px;
+            backdrop-filter: blur(4px);
+        }
+
+        /* formulario directo */
+        .input-group {
+            margin-bottom: 1.8rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.6rem;
+            font-weight: 600;
+            color: #e2edff;
+            font-size: 0.95rem;
+            letter-spacing: 0.2px;
+        }
+        .url-input {
+            width: 100%;
+            background: #0f1422ee;
+            border: 1.5px solid #3a4a6e;
+            border-radius: 1.4rem;
+            padding: 1rem 1.3rem;
+            font-size: 1rem;
+            color: #f5f9ff;
+            transition: all 0.2s;
+            outline: none;
+            backdrop-filter: blur(4px);
+        }
+        .url-input:focus {
+            border-color: #3bc9db;
+            box-shadow: 0 0 0 3px rgba(59, 201, 219, 0.4);
+            background: #0b1020;
+        }
+
+        /* opciones de formato */
+        .format-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.9rem;
+            margin-top: 0.6rem;
+        }
+        .format-option {
+            flex: 1;
+            min-width: 105px;
+        }
+        .format-option input {
+            display: none;
+        }
+        .format-label {
+            display: block;
+            background: #111827cc;
+            backdrop-filter: blur(4px);
+            border: 1px solid #3b4b6e;
+            border-radius: 2.5rem;
+            padding: 0.75rem 0.3rem;
+            text-align: center;
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #d6e5ff;
+        }
+        .format-option input:checked + .format-label {
+            background: linear-gradient(105deg, #2266cc, #1e88e5);
+            border-color: #9ad8ff;
+            color: white;
+            box-shadow: 0 6px 16px rgba(30,136,229,0.5);
+            font-weight: 600;
+        }
+        .format-label:hover {
+            background: #24344e;
+            border-color: #70b0ff;
+        }
+
+        /* botón principal */
+        .btn-download {
+            width: 100%;
+            background: linear-gradient(95deg, #2b6ef0, #1e88e5);
+            border: none;
+            padding: 1rem 1.2rem;
+            border-radius: 3rem;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: white;
+            margin: 1.8rem 0 1.2rem;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 10px 22px rgba(0, 100, 255, 0.4);
+        }
+        .btn-download:active {
+            transform: scale(0.97);
+        }
+        .btn-download:disabled {
+            opacity: 0.6;
+            transform: none;
+            cursor: not-allowed;
+            background: #2e4b72;
+            box-shadow: none;
+        }
+
+        /* status / messages */
+        .status-area {
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(8px);
+            border-radius: 1.5rem;
+            padding: 1rem 1.2rem;
+            margin: 0.8rem 0 0.5rem;
+            font-size: 0.9rem;
+            border-left: 5px solid #3bc9db;
+            color: #eef3ff;
+            word-break: break-word;
+        }
+        .error-message {
+            color: #ffbcbc;
+            border-left-color: #ff6b6b;
+        }
+        .success-message {
+            color: #c6ffb0;
+            border-left-color: #6bff89;
+        }
+        .download-link {
+            margin-top: 12px;
+            display: inline-block;
+            background: #1f2c3e;
+            padding: 8px 20px;
+            border-radius: 40px;
+            text-decoration: none;
+            color: #9ad8ff;
+            font-weight: 500;
+            font-size: 0.85rem;
+            transition: 0.1s;
+        }
+        .download-link:hover {
+            background: #2f405b;
+            color: white;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* detalle opcional: ligera separación */
+        hr {
+            margin: 1.4rem 0 0.8rem;
+            border-color: #2a3a55;
+            opacity: 0.5;
+        }
+        .mini-note {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #8da2cc;
+            margin-top: 1.8rem;
+        }
+
+        @media (max-width: 680px) {
+            body {
+                padding: 1.2rem;
+            }
+            .brand-text {
+                font-size: 1.4rem;
+            }
+            .brand-icon {
+                padding: 0.5rem 1.3rem;
+                gap: 8px;
+            }
+            .brand-icon svg {
+                width: 32px;
+                height: 32px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="content">
+    <!-- Logo principal: sin contenedor rígido, suelto -->
+    <div class="logo-area">
+        <div class="brand-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 3v12m0 0-3-3m3 3 3-3M5 19h14" stroke="url(#grad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                <rect x="3" y="7" width="18" height="10" rx="2" stroke="url(#grad)" stroke-width="1.5"/>
+                <defs>
+                    <linearGradient id="grad" x1="2" y1="8" x2="22" y2="18" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#FDE68A"/>
+                        <stop offset="1" stop-color="#FFB347"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            <span class="brand-text">Con el poder de YT-DLP</span>
+        </div>
+        <div class="brand-sub">YouTube, Vimeo, Twitter, Twitch y +1000 sitios</div>
+    </div>
+
+    <!-- Campo URL -->
+    <div class="input-group">
+        <label>Enlace del video / audio</label>
+        <input type="text" id="videoUrl" class="url-input" placeholder="Tu link aqui">
+    </div>
+
+    <!-- Opciones de calidad -->
+    <div class="input-group">
+        <label>Calidad / Formato</label>
+        <div class="format-grid" id="formatGroup">
+            <div class="format-option">
+                <input type="radio" name="format" id="fmt_best" value="best" checked>
+                <label for="fmt_best" class="format-label">Mejor calidad (video+audio)</label>
+            </div>
+            <div class="format-option">
+                <input type="radio" name="format" id="fmt_720" value="720p">
+                <label for="fmt_720" class="format-label">720p MP4</label>
+            </div>
+            <div class="format-option">
+                <input type="radio" name="format" id="fmt_audio" value="audio">
+                <label for="fmt_audio" class="format-label">Solo audio (MP3)</label>
+            </div>
+        </div>
+    </div>
+
+    <button id="downloadBtn" class="btn-download">
+        <span>Descargar ahora</span>
+    </button>
+
+</div>
+
+<script>
+    (function() {
+        const urlInput = document.getElementById('videoUrl');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const statusDiv = document.getElementById('statusMessage');
+        
+        function getSelectedFormat() {
+            const radios = document.querySelectorAll('input[name="format"]');
+            for (let radio of radios) {
+                if (radio.checked) return radio.value;
+            }
+            return 'best';
+        }
+
+        function setStatus(message, type = 'info') {
+            statusDiv.innerHTML = message;
+            statusDiv.classList.remove('error-message', 'success-message');
+            if (type === 'error') {
+                statusDiv.classList.add('error-message');
+            } else if (type === 'success') {
+                statusDiv.classList.add('success-message');
+            } else {
+                statusDiv.classList.remove('error-message', 'success-message');
+            }
+        }
+
+        async function handleDownload() {
+            let url = urlInput.value.trim();
+            if (!url) {
+                setStatus('❌ Error: Ingresa una URL válida.', 'error');
+                return;
+            }
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                setStatus('⚠️ La URL debe empezar con http:// o https://', 'error');
+                return;
+            }
+            
+            const selectedFormat = getSelectedFormat();
+            downloadBtn.disabled = true;
+            const originalBtnHtml = downloadBtn.innerHTML;
+            downloadBtn.innerHTML = '<span class="loader"></span> Procesando con yt-dlp...';
+            setStatus('🔄 Conectando con el servidor...', 'info');
+            
+            const payload = { url: url, format: selectedFormat };
+            const apiEndpoint = '/api/download';
+            
+            try {
+                const response = await fetch(apiEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const contentType = response.headers.get('content-type');
+                
+                if (!response.ok) {
+                    let errorText = `Error ${response.status}`;
+                    if (contentType && contentType.includes('application/json')) {
+                        const errData = await response.json();
+                        errorText = errData.error || errData.message || errorText;
+                    } else {
+                        errorText = `Servidor respondió con estado ${response.status}`;
+                    }
+                    setStatus(`❌ Fallo: ${errorText}. Revisa que el backend yt‑dlp esté activo.`, 'error');
+                    downloadBtn.disabled = false;
+                    downloadBtn.innerHTML = originalBtnHtml;
+                    return;
+                }
+                
+                // JSON con download_url
+                if (contentType && contentType.includes('application/json')) {
+                    const jsonData = await response.json();
+                    if (jsonData.download_url) {
+                        const link = document.createElement('a');
+                        link.href = jsonData.download_url;
+                        link.download = '';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        setStatus(`✅ ¡Descarga iniciada! ${jsonData.message ? jsonData.message : 'Servidor generó enlace.'}`, 'success');
+                        const manualLink = document.createElement('div');
+                        manualLink.innerHTML = `<a href="${jsonData.download_url}" class="download-link" target="_blank">🔗 Enlace directo (si no arranca)</a>`;
+                        statusDiv.appendChild(manualLink);
+                    } else if (jsonData.error) {
+                        setStatus(`❌ Error backend: ${jsonData.error}`, 'error');
+                    } else {
+                        setStatus(`⚠️ Respuesta inesperada: ${JSON.stringify(jsonData)}`, 'error');
+                    }
+                } 
+                // Archivo binario directo
+                else {
+                    const blob = await response.blob();
+                    const contentDisposition = response.headers.get('content-disposition');
+                    let filename = 'video_descargado.mp4';
+                    if (contentDisposition && contentDisposition.includes('filename=')) {
+                        const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                        if (match && match[1]) {
+                            filename = match[1].replace(/['"]/g, '');
+                        }
+                    } else {
+                        filename = selectedFormat === 'audio' ? 'audio_descargado.mp3' : `video_${Date.now()}.mp4`;
+                    }
+                    const downloadUrl = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(downloadUrl);
+                    setStatus(`✅ ¡Completado! Archivo: ${filename}. El poder de yt‑dlp en acción.`, 'success');
+                }
+                
+            } catch (error) {
+                console.error(error);
+                let errorMsg = error.message;
+                if (errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError')) {
+                    errorMsg = 'No se pudo conectar al backend. Asegúrate de ejecutar el servidor con yt‑dlp (Flask/Node). Revisa consola.';
+                }
+                setStatus(`❌ Error de red: ${errorMsg}`, 'error');
+            } finally {
+                downloadBtn.disabled = false;
+                downloadBtn.innerHTML = originalBtnHtml;
+            }
+        }
+        
+        downloadBtn.addEventListener('click', handleDownload);
+        urlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleDownload();
+            }
+        });
+    })();
+</script>
+</body>
+</html>
